@@ -8,6 +8,7 @@ function App() {
   const [locationHistory, setLocationHistory] = useState([]);
   const [distance, setDistance] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
+  const [disablingbutton,setDisablingButton]=useState(true)
   console.log(locationHistory.length, 'starting location');
   let watchKey;
   useEffect(() => {
@@ -32,6 +33,7 @@ function App() {
   }, []);
 
   function startWatching() {
+    setDisablingButton(prev=>!prev)
     setDistance(0);
     if (locationPermission) {
       Geolocation.getCurrentPosition(
@@ -85,8 +87,15 @@ function App() {
     );
   }
   function stopWatching() {
+    setDisablingButton(prev=>!prev)
+    setStartingLocation(prev=>{
+      if(locationHistory.length>0)
+      return locationHistory[locationHistory.length-1];
+      else
+      null
+    });
     setLocationHistory([]);
-    setStartingLocation(null);
+    
     Geolocation.clearWatch(watchKey);
   }
   return (
@@ -134,7 +143,7 @@ function App() {
       <View
         style={{
           width: '80%',
-          height: '10%',
+          height: '11%',
           backgroundColor: 'white',
           alignItems: 'center',
           position: 'absolute',
@@ -143,26 +152,31 @@ function App() {
           flexDirection: 'row',
           justifyContent: 'space-around',
           borderRadius: 12,
+          flexWrap:'wrap'
         }}>
+        <View style={{width:'100%',height:'30%'}}>
+          <Text>total distance travelled: <Text style={{fontWeight:'bold'}}>{distance}</Text></Text>
+        </View>
         <TouchableOpacity
           style={{
-            backgroundColor: 'green',
+            backgroundColor: disablingbutton?'green':'grey',
             width: '40%',
-            height: '60%',
+            height: '50%',
             borderRadius: 10,
             justifyContent: 'center',
             alignItems: 'center',
           }}
           onPress={startWatching}>
           <Text style={{fontSize: 21, fontWeight: 'bold', color: 'white'}}>
-            Start {distance}
+            Start 
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+        disabled={disablingbutton}
           style={{
-            backgroundColor: 'red',
+            backgroundColor: disablingbutton?'grey':'red',
             width: '40%',
-            height: '60%',
+            height: '50%',
             borderRadius: 10,
             justifyContent: 'center',
             alignItems: 'center',

@@ -6,19 +6,37 @@ function App() {
   const [startingLocation, setStartingLocation] = useState();
   const [locationHistory, setLocationHistory] = useState([]);
   const [distance, setDistance] = useState(0);
-  console.log(startingLocation);
+  console.log(locationHistory.length,'starting location');
   let watchKey;
-  useEffect(()=>{
+  useEffect(() => {
     setDistance(prev => {
-      const addedDistance = Math.sqrt(
-        Math.pow(locationHistory[locationHistory.length - 1], 2) +
-          Math.pow(locationHistory[locationHistory.length - 2], 2)
-      );
-      return prev + addedDistance;
+      if (locationHistory.length > 1) {
+         const addedDistance = Math.sqrt(
+          Math.pow(
+            locationHistory[locationHistory.length - 1].longitude -
+              locationHistory[locationHistory.length - 2].longitude,
+            2,
+          ) +
+            Math.pow(
+              locationHistory[locationHistory.length - 1].latitude -
+                locationHistory[locationHistory.length - 2].latitude,
+              2,
+            ),
+        );
+        return prev + addedDistance*1000;
+      }
+      else 
+      return prev;
     });
-  },[locationHistory])
+  }, [JSON.stringify(locationHistory)]);
+
+  // useEffect(() => {
+    
+  // }, [third])
+  
   function startWatching() {
-    setDistance(0)
+    setDistance(0);
+    
     Geolocation.requestAuthorization('whenInUse')
       .then(res => {
         if (res === 'granted') return true;
@@ -33,7 +51,9 @@ function App() {
                 longitude: position.coords.longitude,
               };
               setStartingLocation(location);
-              console.log(position.coords);
+              
+              setLocationHistory([location])
+              console.log(position.coords,'current location');
             },
             error => {
               console.log(error);
@@ -41,9 +61,9 @@ function App() {
             {
               enableHighAccuracy: true,
               timeout: 2000,
-              maximumAge: 1000,
+              maximumAge: 10000,
               forceRequestLocation: true,
-            }
+            },
           );
         }
       });
@@ -56,7 +76,7 @@ function App() {
             longitude: position.coords.longitude,
           },
         ]);
-       },
+      },
       error => {
         console.log(error);
       },
@@ -64,7 +84,7 @@ function App() {
         enableHighAccuracy: true,
         distanceFilter: 0,
         interval: 5000,
-        fastestInterval: 2000,
+        fastestInterval: 10000,
       },
     );
   }

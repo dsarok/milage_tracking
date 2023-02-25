@@ -168,7 +168,7 @@ console.log(locationHistory)
         <View style={{width: '100%', height: '34%', alignItems: 'center'}}>
           <Text style={{fontSize: 19}}>
             Total distance travelled:{' '}
-            <Text style={{fontWeight: 'bold'}}>{distance.toFixed(2)} m</Text>
+            <Text style={{fontWeight: 'bold'}}>{distance<1000?distance.toFixed(2)+ " m":(distance/1000).toFixed(2)+" km"}</Text>
           </Text>
         </View>
 

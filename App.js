@@ -8,17 +8,18 @@ function App() {
   const [locationHistory, setLocationHistory] = useState([]);
   const [distance, setDistance] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
-  const [disablingbutton,setDisablingButton]=useState(true)
-  console.log(locationHistory.length, 'starting location');
-  let watchKey;
+  const [disablingbutton, setDisablingButton] = useState(true);
+  const [watchKey, setWatchKey] = useState(-1);
+
   useEffect(() => {
     setDistance(prev => {
       if (locationHistory.length > 1) {
         const addedDistance = geolib.getDistance(
           locationHistory[locationHistory.length - 1],
           locationHistory[locationHistory.length - 2],
+          1,
         );
-        return prev + parseFloat((addedDistance/1000).toFixed(2));
+        return prev + parseFloat(addedDistance.toFixed(2));
       } else return prev;
     });
   }, [JSON.stringify(locationHistory)]);
@@ -33,8 +34,9 @@ function App() {
   }, []);
 
   function startWatching() {
-    setDisablingButton(prev=>!prev)
+    setDisablingButton(prev => !prev);
     setDistance(0);
+    setLocationHistory([]);
     if (locationPermission) {
       Geolocation.getCurrentPosition(
         position => {
@@ -65,7 +67,7 @@ function App() {
         })
         .then(res => setLocationPermission(res));
     }
-    watchKey = Geolocation.watchPosition(
+    const Watch = Geolocation.watchPosition(
       position => {
         setLocationHistory(prev => [
           ...prev,
@@ -85,19 +87,19 @@ function App() {
         fastestInterval: 10000,
       },
     );
+    setWatchKey(Watch);
   }
   function stopWatching() {
-    setDisablingButton(prev=>!prev)
-    setStartingLocation(prev=>{
-      if(locationHistory.length>0)
-      return locationHistory[locationHistory.length-1];
-      else
-      null
-    });
-    setLocationHistory([]);
-    
     Geolocation.clearWatch(watchKey);
+    setDisablingButton(prev => !prev);
+    setStartingLocation(prev => {
+      if (locationHistory.length > 0)
+        return locationHistory[locationHistory.length - 1];
+      else null;
+    });
+    // setLocationHistory([]);
   }
+console.log(locationHistory)
   return (
     <View style={{flex: 1}}>
       <MapView
@@ -105,18 +107,27 @@ function App() {
         region={{
           latitude:
             locationHistory.length > 0
-              ? locationHistory[locationHistory.length - 1].latitude
+              ? (locationHistory[locationHistory.length - 1].latitude +
+                    locationHistory[0].latitude)/2
               : startingLocation
               ? startingLocation.latitude
               : '57',
           longitude:
             locationHistory.length > 0
-              ? locationHistory[locationHistory.length - 1].longitude
+              ? (locationHistory[locationHistory.length - 1].longitude +
+                    locationHistory[0].longitude)/2
               : startingLocation
               ? startingLocation.longitude
               : '15',
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta:
+            locationHistory.length > 0
+              ? Math.abs(locationHistory[locationHistory.length - 1].latitude -
+                    locationHistory[0].latitude)+0.001
+              : 0.004,
+          longitudeDelta:locationHistory.length > 0
+              ?Math.abs(locationHistory[locationHistory.length - 1].longitude -
+                    locationHistory[0].longitude)+0.0008
+              : 0.004,
         }}>
         <Polyline
           coordinates={locationHistory}
@@ -152,14 +163,18 @@ function App() {
           flexDirection: 'row',
           justifyContent: 'space-around',
           borderRadius: 12,
-          flexWrap:'wrap'
+          flexWrap: 'wrap',
         }}>
-        <View style={{width:'100%',height:'30%'}}>
-          <Text>total distance travelled: <Text style={{fontWeight:'bold'}}>{distance}</Text></Text>
+        <View style={{width: '100%', height: '34%', alignItems: 'center'}}>
+          <Text style={{fontSize: 19}}>
+            Total distance travelled:{' '}
+            <Text style={{fontWeight: 'bold'}}>{distance.toFixed(2)} m</Text>
+          </Text>
         </View>
+
         <TouchableOpacity
           style={{
-            backgroundColor: disablingbutton?'green':'grey',
+            backgroundColor: disablingbutton ? 'green' : 'grey',
             width: '40%',
             height: '50%',
             borderRadius: 10,
@@ -168,13 +183,13 @@ function App() {
           }}
           onPress={startWatching}>
           <Text style={{fontSize: 21, fontWeight: 'bold', color: 'white'}}>
-            Start 
+            Start
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-        disabled={disablingbutton}
+          disabled={disablingbutton}
           style={{
-            backgroundColor: disablingbutton?'grey':'red',
+            backgroundColor: disablingbutton ? 'grey' : 'red',
             width: '40%',
             height: '50%',
             borderRadius: 10,

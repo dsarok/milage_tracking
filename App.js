@@ -2,71 +2,67 @@ import React, {useEffect, useState} from 'react';
 import MapView, {Marker, Polyline} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import {Text, TouchableOpacity, View} from 'react-native';
+import * as geolib from 'geolib';
 function App() {
   const [startingLocation, setStartingLocation] = useState();
   const [locationHistory, setLocationHistory] = useState([]);
   const [distance, setDistance] = useState(0);
-  console.log(locationHistory.length,'starting location');
+  const [locationPermission, setLocationPermission] = useState(false);
+  console.log(locationHistory.length, 'starting location');
   let watchKey;
   useEffect(() => {
     setDistance(prev => {
       if (locationHistory.length > 1) {
-         const addedDistance = Math.sqrt(
-          Math.pow(
-            locationHistory[locationHistory.length - 1].longitude -
-              locationHistory[locationHistory.length - 2].longitude,
-            2,
-          ) +
-            Math.pow(
-              locationHistory[locationHistory.length - 1].latitude -
-                locationHistory[locationHistory.length - 2].latitude,
-              2,
-            ),
+        const addedDistance = geolib.getDistance(
+          locationHistory[locationHistory.length - 1],
+          locationHistory[locationHistory.length - 2],
         );
-        return prev + addedDistance*1000;
-      }
-      else 
-      return prev;
+        return prev + parseFloat((addedDistance/1000).toFixed(2));
+      } else return prev;
     });
   }, [JSON.stringify(locationHistory)]);
 
-  // useEffect(() => {
-    
-  // }, [third])
-  
-  function startWatching() {
-    setDistance(0);
-    
+  useEffect(() => {
     Geolocation.requestAuthorization('whenInUse')
       .then(res => {
         if (res === 'granted') return true;
         else return true;
       })
-      .then(resp => {
-        if (resp) {
-          Geolocation.getCurrentPosition(
-            position => {
-              const location = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              };
-              setStartingLocation(location);
-              
-              setLocationHistory([location])
-              console.log(position.coords,'current location');
-            },
-            error => {
-              console.log(error);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 2000,
-              maximumAge: 10000,
-              forceRequestLocation: true,
-            },
-          );
-        }
-      });
+      .then(res => setLocationPermission(res));
+  }, []);
+
+  function startWatching() {
+    setDistance(0);
+    if (locationPermission) {
+      Geolocation.getCurrentPosition(
+        position => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setStartingLocation(location);
+
+          setLocationHistory([location]);
+          console.log(position.coords, 'current location');
+        },
+        error => {
+          console.log(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 2000,
+          maximumAge: 10000,
+          forceRequestLocation: true,
+        },
+      );
+    } else {
+      Geolocation.requestAuthorization('whenInUse')
+        .then(res => {
+          if (res === 'granted') return true;
+          else return true;
+        })
+        .then(res => setLocationPermission(res));
+    }
     watchKey = Geolocation.watchPosition(
       position => {
         setLocationHistory(prev => [
